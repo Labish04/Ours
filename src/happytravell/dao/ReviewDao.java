@@ -232,4 +232,20 @@ public class ReviewDao {
             e.printStackTrace();
         }
     }
+    
+    public double getAverageRating(String placeName) {
+    String sql = "SELECT AVG(rating) FROM reviews WHERE place_name = ? AND status = 'APPROVED'";
+    try (Connection conn = mySql.openConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setString(1, placeName);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble(1);
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return 0.0;
+}
+    
 }

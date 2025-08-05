@@ -5,12 +5,14 @@
 package happytravell.view;
 
 import java.awt.Image;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseListener;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 
 
 
@@ -125,6 +127,7 @@ public class TravelerReviewsView extends javax.swing.JFrame {
         scrollPane = new javax.swing.JScrollPane();
         jPanel2 = new javax.swing.JPanel();
         backButton = new javax.swing.JButton();
+        searchField = new javax.swing.JTextField();
         DashDetailsPanel = new javax.swing.JPanel();
         logoutIcon = new javax.swing.JLabel();
         profileIcon = new javax.swing.JLabel();
@@ -163,11 +166,10 @@ public class TravelerReviewsView extends javax.swing.JFrame {
         TravelerDetailsPanel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setFont(new java.awt.Font("Constantia", 1, 18)); // NOI18N
         jLabel1.setText("Reviews");
-        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 10, 150, 30));
+        jPanel1.add(jLabel1);
 
         TravelerDetailsPanel.add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 700, 40));
 
@@ -175,7 +177,7 @@ public class TravelerReviewsView extends javax.swing.JFrame {
         scrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         jPanel2.setBackground(new java.awt.Color(255, 242, 227));
-        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel2.setLayout(new java.awt.GridBagLayout());
         scrollPane.setViewportView(jPanel2);
 
         TravelerDetailsPanel.add(scrollPane, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 80, 680, 510));
@@ -184,6 +186,11 @@ public class TravelerReviewsView extends javax.swing.JFrame {
         backButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         backButton.setText("Back");
         TravelerDetailsPanel.add(backButton, new org.netbeans.lib.awtextra.AbsoluteConstraints(15, 50, 70, 25));
+
+        searchField.setBackground(new java.awt.Color(252, 186, 107));
+        searchField.setFont(new java.awt.Font("Segoe UI", 2, 14)); // NOI18N
+        searchField.setText("Search");
+        TravelerDetailsPanel.add(searchField, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 46, 210, 30));
 
         getContentPane().add(TravelerDetailsPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 0, 700, 600));
 
@@ -323,6 +330,7 @@ public class TravelerReviewsView extends javax.swing.JFrame {
     private javax.swing.JLabel routeIcon;
     private javax.swing.JLabel routeLabel;
     private javax.swing.JScrollPane scrollPane;
+    private javax.swing.JTextField searchField;
     private javax.swing.JLabel vehiclesDetailsLabel;
     private javax.swing.JLabel vehiclesIcon;
     // End of variables declaration//GEN-END:variables
@@ -373,13 +381,24 @@ public class TravelerReviewsView extends javax.swing.JFrame {
         return logOutLabel;
     } 
     
+    public void BackNavigation(ActionListener listener){
+        backButton.addActionListener(listener);
+    }
+    
     public JButton getBackButton(){
     return backButton;
     }
+    
     public JPanel getTravelerDetailsPanel() {
     return TravelerDetailsPanel;
     }
     public JScrollPane getScrollPane() {
     return scrollPane;
-}
+    }
+    public JPanel getPlacesPanel() {
+        return jPanel2;
+    }
+    public JTextField getSearchField() {
+    return searchField;
+    }
 }

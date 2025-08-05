@@ -4,6 +4,10 @@
  */
 package happytravell.controller;
 
+import happytravell.dao.PlaceDao;
+import happytravell.dao.ReviewDao;
+import happytravell.model.PlaceData;
+import happytravell.model.ReviewData;
 import happytravell.view.LoginPageView;
 import happytravell.view.TravellerBookingView;
 import happytravell.view.TravellerBusTicketsView;
@@ -11,14 +15,9 @@ import happytravell.view.TravellerProfileView;
 import happytravell.view.TravellerRouteView;
 import happytravell.view.TravellerVehiclesDetailsView;
 import happytravell.view.TravellerdashboardView;
-import happytravell.dao.ReviewDao;
-import happytravell.model.ReviewData;
 import happytravell.view.TravelerReviewsView;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,20 +31,22 @@ public class TravelerReviewsController {
     private ReviewDao reviewDao;
     private JPanel reviewsContainer;
     private int currentTravellerId;
+    private PlaceDao placeDao;
     
     public TravelerReviewsController(TravelerReviewsView travelerReviewsView, int travellerId) {
         this.reviewView = travelerReviewsView;
         this.reviewDao = new ReviewDao();
         this.currentTravellerId = travellerId;
+        this.placeDao = new PlaceDao();
         this.reviewsContainer = (JPanel) reviewView.getScrollPane().getViewport().getView();
         
         setupNavigation();
         setupBackButton();
-        loadReviews();
+        initializePlaceManagement();
+        loadPlaces(); 
     }
     
     private void setupNavigation() {
-        // Setup navigation listeners with proper mouse listeners
         reviewView.DashboardNavigation(new DashboardNav(reviewView.getDashboardlabel()));
         reviewView.RouteDetailsNavigation(new RouteDetailsNav(reviewView.getRoutelabel()));
         reviewView.BookingNavigation(new BookingNav(reviewView.getBookinglabel()));
@@ -53,6 +54,7 @@ public class TravelerReviewsController {
         reviewView.VehiclesDetailsNavigation(new VehiclesDetailsNav(reviewView.getVehiclesDetailslabel()));
         reviewView.ProfileNavigation(new ProfileNav(reviewView.getProfilelabel()));
         reviewView.LogOutNavigation(new LogOutNav(reviewView.getLogOutlabel()));
+        this.reviewView.BackNavigation(new BackNav());
     }
     
     private void setupBackButton() {
@@ -67,215 +69,6 @@ public class TravelerReviewsController {
         });
     }
     
-    private void loadReviews() {
-        // Clear existing content
-        reviewsContainer.removeAll();
-        reviewsContainer.setLayout(new BoxLayout(reviewsContainer, BoxLayout.Y_AXIS));
-        reviewsContainer.setBackground(new Color(255, 242, 227));
-        
-        // Get all reviews from database
-        List<ReviewData> reviews = reviewDao.getAllReviews();
-        
-        if (reviews.isEmpty()) {
-            // Show no reviews message
-            JLabel noReviewsLabel = new JLabel("No reviews found");
-            noReviewsLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            noReviewsLabel.setForeground(new Color(100, 100, 100));
-            noReviewsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            noReviewsLabel.setBorder(new EmptyBorder(50, 0, 0, 0));
-            reviewsContainer.add(noReviewsLabel);
-        } else {
-            // Add each review as a card
-            for (ReviewData review : reviews) {
-                reviewsContainer.add(createReviewCard(review));
-                reviewsContainer.add(Box.createVerticalStrut(15));
-            }
-        }
-        
-        // Refresh the scroll pane
-        reviewsContainer.revalidate();
-        reviewsContainer.repaint();
-    }
-    
-    private JPanel createReviewCard(ReviewData review) {
-        JPanel card = new JPanel();
-        card.setLayout(new BorderLayout(10, 5));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
-        card.setMaximumSize(new Dimension(650, 200));
-        card.setPreferredSize(new Dimension(650, 200));
-        
-        // Header panel with traveller info and rating
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(Color.WHITE);
-        
-        // Traveller info
-        JPanel travellerInfoPanel = new JPanel(new BorderLayout(5, 2));
-        travellerInfoPanel.setBackground(Color.WHITE);
-        
-        JLabel nameLabel = new JLabel(review.getTravellerName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        nameLabel.setForeground(new Color(50, 50, 50));
-        
-        JLabel emailLabel = new JLabel(review.getTravellerEmail());
-        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        emailLabel.setForeground(new Color(100, 100, 100));
-        
-        travellerInfoPanel.add(nameLabel, BorderLayout.NORTH);
-        travellerInfoPanel.add(emailLabel, BorderLayout.SOUTH);
-        
-        // Rating stars
-        JPanel ratingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
-        ratingPanel.setBackground(Color.WHITE);
-        
-        int rating = review.getRating();
-        for (int i = 0; i < 5; i++) {
-            JLabel starLabel = new JLabel(i < rating ? "★" : "☆");
-            starLabel.setFont(new Font("Arial Unicode MS", Font.BOLD, 20));
-            starLabel.setForeground(i < rating ? new Color(255, 193, 7) : new Color(200, 200, 200));
-            ratingPanel.add(starLabel);
-        }
-        
-        JLabel ratingText = new JLabel(" (" + rating + "/5)");
-        ratingText.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        ratingText.setForeground(new Color(100, 100, 100));
-        ratingPanel.add(ratingText);
-        
-        headerPanel.add(travellerInfoPanel, BorderLayout.WEST);
-        headerPanel.add(ratingPanel, BorderLayout.EAST);
-        
-        // Review content
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 5));
-        contentPanel.setBackground(Color.WHITE);
-        
-        // Review text
-        JTextArea reviewTextArea = new JTextArea(review.getReviewText());
-        reviewTextArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        reviewTextArea.setLineWrap(true);
-        reviewTextArea.setWrapStyleWord(true);
-        reviewTextArea.setEditable(false);
-        reviewTextArea.setBackground(new Color(248, 248, 248));
-        reviewTextArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        JScrollPane textScrollPane = new JScrollPane(reviewTextArea);
-        textScrollPane.setPreferredSize(new Dimension(400, 80));
-        textScrollPane.setBorder(null);
-        
-        // Additional details
-        JPanel detailsPanel = new JPanel(new GridLayout(3, 1, 5, 2));
-        detailsPanel.setBackground(Color.WHITE);
-        
-        if (review.getBookingReference() != null && !review.getBookingReference().isEmpty()) {
-            JLabel bookingLabel = new JLabel("Booking: " + review.getBookingReference());
-            bookingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            bookingLabel.setForeground(new Color(100, 100, 100));
-            detailsPanel.add(bookingLabel);
-        }
-        
-        if (review.getVehicleType() != null && !review.getVehicleType().isEmpty()) {
-            JLabel vehicleLabel = new JLabel("Vehicle: " + review.getVehicleType());
-            vehicleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            vehicleLabel.setForeground(new Color(100, 100, 100));
-            detailsPanel.add(vehicleLabel);
-        }
-        
-        if (review.getDriverName() != null && !review.getDriverName().isEmpty()) {
-            JLabel driverLabel = new JLabel("Driver: " + review.getDriverName());
-            driverLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            driverLabel.setForeground(new Color(100, 100, 100));
-            detailsPanel.add(driverLabel);
-        }
-        
-        contentPanel.add(textScrollPane, BorderLayout.CENTER);
-        contentPanel.add(detailsPanel, BorderLayout.EAST);
-        
-        // Status and actions panel
-        JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.setBackground(Color.WHITE);
-        
-        JLabel statusLabel = new JLabel("Status: " + review.getStatus());
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        statusLabel.setForeground(review.getStatus().equals("APPROVED") ? 
-            new Color(76, 175, 80) : 
-            review.getStatus().equals("REJECTED") ? 
-            new Color(244, 67, 54) : 
-            new Color(255, 152, 0));
-        
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        actionPanel.setBackground(Color.WHITE);
-        
-        if (review.getStatus().equals("PENDING")) {
-            JButton approveButton = new JButton("Approve");
-            approveButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            approveButton.setBackground(new Color(76, 175, 80));
-            approveButton.setForeground(Color.WHITE);
-            approveButton.setFocusPainted(false);
-            approveButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    approveReview(review.getReviewId());
-                }
-            });
-            
-            JButton rejectButton = new JButton("Reject");
-            rejectButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            rejectButton.setBackground(new Color(244, 67, 54));
-            rejectButton.setForeground(Color.WHITE);
-            rejectButton.setFocusPainted(false);
-            rejectButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    rejectReview(review.getReviewId());
-                }
-            });
-            
-            actionPanel.add(approveButton);
-            actionPanel.add(rejectButton);
-        }
-        
-        statusPanel.add(statusLabel, BorderLayout.WEST);
-        statusPanel.add(actionPanel, BorderLayout.EAST);
-        
-        // Add all panels to card
-        card.add(headerPanel, BorderLayout.NORTH);
-        card.add(contentPanel, BorderLayout.CENTER);
-        card.add(statusPanel, BorderLayout.SOUTH);
-        
-        return card;
-    }
-    
-    private void approveReview(int reviewId) {
-        if (reviewDao.updateReviewStatus(reviewId, "APPROVED")) {
-            JOptionPane.showMessageDialog(reviewView, 
-                "Review approved successfully!", 
-                "Success", 
-                JOptionPane.INFORMATION_MESSAGE);
-            loadReviews(); // Refresh the display
-        } else {
-            JOptionPane.showMessageDialog(reviewView, 
-                "Failed to approve review. Please try again.", 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void rejectReview(int reviewId) {
-        if (reviewDao.updateReviewStatus(reviewId, "REJECTED")) {
-            JOptionPane.showMessageDialog(reviewView, 
-                "Review rejected successfully!", 
-                "Success", 
-                JOptionPane.INFORMATION_MESSAGE);
-            loadReviews(); // Refresh the display
-        } else {
-            JOptionPane.showMessageDialog(reviewView, 
-                "Failed to reject review. Please try again.", 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
     
     public void open() {
         this.reviewView.setVisible(true);
@@ -529,4 +322,432 @@ public class TravelerReviewsController {
             logOutLabel.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
         }
     }
+    
+    class BackNav implements ActionListener{
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            TravellerdashboardView travellerDashboardView = new TravellerdashboardView();
+            TravellerDashboardController travellerController = new TravellerDashboardController(travellerDashboardView, currentTravellerId);
+            travellerController.open();
+            close();
+        }
+        
+    }
+    
+    private JPanel createPlaceCard(PlaceData place) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBackground(new Color(222, 184, 135));
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(205, 133, 63), 2), 
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)));
+        card.setPreferredSize(new Dimension(280, 420));
+        card.setMaximumSize(new Dimension(280, 420));
+        card.setMinimumSize(new Dimension(280, 420));
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(new Color(222, 184, 135));
+        
+        // Circular Image Panel
+        JPanel imagePanel = new JPanel();
+        imagePanel.setBackground(new Color(222, 184, 135));
+        imagePanel.setLayout(new BorderLayout());
+        imagePanel.setPreferredSize(new Dimension(250, 250));
+        
+        JLabel imageLabel = new JLabel();
+        imageLabel.setPreferredSize(new Dimension(250, 250));
+        imageLabel.setHorizontalAlignment(JLabel.CENTER);
+        imageLabel.setVerticalAlignment(JLabel.CENTER);
+        
+        if (place.getPlaceImage() != null) {
+            ImageIcon icon = new ImageIcon(place.getPlaceImage());
+            Image img = icon.getImage().getScaledInstance(250, 250, Image.SCALE_SMOOTH);
+            ImageIcon scaledIcon = new ImageIcon(img);
+            imageLabel.setIcon(createCircularImage(scaledIcon, 250));
+        } else {
+            imageLabel.setOpaque(true);
+            imageLabel.setBackground(Color.LIGHT_GRAY);
+            imageLabel.setText("No Image");
+            imageLabel.setHorizontalAlignment(JLabel.CENTER);
+            imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        }
+        imagePanel.add(imageLabel, BorderLayout.CENTER);
+        
+        // Place name
+        JLabel nameLabel = new JLabel(place.getPlaceName());
+        nameLabel.setFont(new Font("Constantia", Font.BOLD, 18));
+        nameLabel.setHorizontalAlignment(JLabel.CENTER);
+        nameLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        
+        // Average Rating Panel
+        double avgRating = reviewDao.getAverageRating(place.getPlaceName());
+        JPanel ratingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+        ratingPanel.setBackground(new Color(222, 184, 135));
+        ratingPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ratingPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+        
+        int fullStars = (int) avgRating;
+        for (int i = 0; i < 5; i++) {
+            JLabel starLabel = new JLabel(i < fullStars ? "★" : "☆");
+            starLabel.setFont(new Font("Arial Unicode MS", Font.BOLD, 16));
+            starLabel.setForeground(i < fullStars ? new Color(255, 193, 7) : Color.GRAY);
+            ratingPanel.add(starLabel);
+        }
+        
+        // Add rating text
+        JLabel ratingText = new JLabel(String.format("(%.1f)", avgRating));
+        ratingText.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        ratingText.setForeground(new Color(100, 100, 100));
+        ratingPanel.add(ratingText);
+        
+        // Description
+        JTextArea descArea = new JTextArea(place.getDescription());
+        descArea.setEditable(false);
+        descArea.setLineWrap(true);
+        descArea.setWrapStyleWord(true);
+        descArea.setBackground(new Color(222, 184, 135));
+        descArea.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        descArea.setRows(3);
+        descArea.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
+        descArea.setBorder(BorderFactory.createEmptyBorder(5, 0, 10, 0));
+        
+        // Review Button
+        JButton reviewButton = new JButton("Add Review");
+        reviewButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        reviewButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        reviewButton.setBackground(new Color(139, 69, 19));
+        reviewButton.setForeground(Color.WHITE);
+        reviewButton.setFocusPainted(false);
+        reviewButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createRaisedBevelBorder(),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
+        reviewButton.setMaximumSize(new Dimension(150, 30));
+        
+        reviewButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                reviewButton.setBackground(new Color(160, 82, 45));
+                reviewButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                reviewButton.setBackground(new Color(139, 69, 19));
+            }
+        });
+        
+        reviewButton.addActionListener(e -> openReviewDialog(place));
+        
+        // Add components to content panel
+        contentPanel.add(imagePanel);
+        contentPanel.add(nameLabel);
+        contentPanel.add(ratingPanel);
+        contentPanel.add(descArea);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        contentPanel.add(reviewButton);
+        
+        card.add(contentPanel, BorderLayout.CENTER);
+        
+        // Hover effects
+        card.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(160, 82, 45), 3), 
+                    BorderFactory.createEmptyBorder(14, 14, 14, 14)));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                card.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(205, 133, 63), 2), 
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)));
+            }
+        });
+        
+        return card;
+    }
+    
+     private ImageIcon createCircularImage(ImageIcon icon, int size) {
+        Image img = icon.getImage();
+        java.awt.image.BufferedImage circularImage = new java.awt.image.BufferedImage(
+            size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = circularImage.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, size, size));
+        g2d.drawImage(img, 0, 0, size, size, null);
+        g2d.dispose();
+
+        return new ImageIcon(circularImage);
+    }
+
+// Placeholder for review dialog method
+private void openReviewDialog(PlaceData place) {
+        JDialog dialog = new JDialog(reviewView, "Add Review for " + place.getPlaceName(), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(reviewView);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        panel.setBackground(Color.WHITE);
+
+        // Place information
+        JLabel placeLabel = new JLabel(place.getPlaceName());
+        placeLabel.setFont(new Font("Constantia", Font.BOLD, 16));
+        placeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        placeLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        panel.add(placeLabel);
+        
+        // Rating Selection
+        JPanel ratingPanel = new JPanel();
+        ratingPanel.setLayout(new BoxLayout(ratingPanel, BoxLayout.Y_AXIS));
+        ratingPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ratingPanel.setBackground(Color.WHITE);
+        
+        JLabel ratingLabel = new JLabel("Your Rating:");
+        ratingLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        ratingLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ratingPanel.add(ratingLabel);
+        ratingPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        JPanel starPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+        starPanel.setBackground(Color.WHITE);
+        JButton[] starButtons = new JButton[5];
+        int[] userRating = {0};
+
+        for (int i = 0; i < 5; i++) {
+            starButtons[i] = new JButton("☆");
+            starButtons[i].setFont(new Font("Arial Unicode MS", Font.BOLD, 24));
+            starButtons[i].setForeground(Color.GRAY);
+            starButtons[i].setBorderPainted(false);
+            starButtons[i].setContentAreaFilled(false);
+            starButtons[i].setFocusPainted(false);
+            int index = i;
+            starButtons[i].addActionListener(e -> {
+                userRating[0] = index + 1;
+                for (int j = 0; j < 5; j++) {
+                    if (j <= index) {
+                        starButtons[j].setText("★");
+                        starButtons[j].setForeground(new Color(255, 193, 7));
+                    } else {
+                        starButtons[j].setText("☆");
+                        starButtons[j].setForeground(Color.GRAY);
+                    }
+                }
+            });
+            starPanel.add(starButtons[i]);
+        }
+        ratingPanel.add(starPanel);
+        ratingPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        
+        // Review Text
+        JLabel commentLabel = new JLabel("Your Review:");
+        commentLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        commentLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        commentLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        
+        JTextArea reviewText = new JTextArea(5, 30);
+        reviewText.setLineWrap(true);
+        reviewText.setWrapStyleWord(true);
+        JScrollPane scrollPane = new JScrollPane(reviewText);
+        scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Submit Button
+        JButton submitButton = new JButton("Submit Review");
+        submitButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        submitButton.setBackground(new Color(76, 175, 80));
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setFocusPainted(false);
+        submitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        submitButton.setMaximumSize(new Dimension(150, 35));
+        submitButton.addActionListener(e -> {
+            if (userRating[0] == 0) {
+                JOptionPane.showMessageDialog(dialog, "Please select a rating", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            ReviewData review = new ReviewData();
+            review.setPlaceName(place.getPlaceName());
+            review.setTravellerId(currentTravellerId);
+            review.setRating(userRating[0]);
+            review.setReviewText(reviewText.getText());
+            review.setStatus("PENDING");
+            
+            if (reviewDao.addReview(review)) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Review submitted for approval", 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+                loadPlaces(); // Refresh to update average rating
+            } else {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Failed to submit review", 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        // Button hover effects
+        submitButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                submitButton.setBackground(new Color(56, 142, 60));
+                submitButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                submitButton.setBackground(new Color(76, 175, 80));
+            }
+        });
+
+        // Add components to panel
+        panel.add(ratingPanel);
+        panel.add(commentLabel);
+        panel.add(scrollPane);
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+        panel.add(submitButton);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.setVisible(true);
+    }
+
+    private void initializePlaceManagement() {
+            reviewView.getSearchField().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    searchPlaces();
+                }
+            });
+
+            reviewView.getSearchField().addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (reviewView.getSearchField().getText().equals("Search")) {
+                        reviewView.getSearchField().setText("");
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (reviewView.getSearchField().getText().isEmpty()) {
+                        reviewView.getSearchField().setText("Search");
+                        loadPlaces();
+                    }
+                }
+            });
+    }
+
+    // Enhanced loadPlaces method for TravellerPlacesController
+    private void loadPlaces() {
+        try {
+            List<PlaceData> places = placeDao.getAllPlaces();
+            JPanel placesPanel = reviewView.getPlacesPanel();
+            placesPanel.removeAll();
+            placesPanel.setLayout(new GridBagLayout());
+            placesPanel.setBackground(new Color(255, 242, 227));
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(10, 10, 10, 10);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            if (places.isEmpty()) {
+                JLabel noPlacesLabel = new JLabel("No places available.");
+                noPlacesLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                placesPanel.add(noPlacesLabel, gbc);
+            } else {
+                int row = 0;
+                int col = 0;
+                
+                for (PlaceData place : places) {
+                    gbc.gridx = col;
+                    gbc.gridy = row;
+                    placesPanel.add(createPlaceCard(place), gbc);
+                    
+                    col++;
+                    if (col >= 2) { // 2 columns
+                        col = 0;
+                        row++;
+                    }
+                }
+            }
+            placesPanel.revalidate();
+            placesPanel.repaint();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(reviewView, "Error loading places", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }    
+    
+    private void searchPlaces() {
+        String searchText = reviewView.getSearchField().getText();
+        if (searchText.equals("Search") || searchText.isEmpty()) {
+            loadPlaces();
+            return;
+        }
+        
+        try {
+            List<PlaceData> allPlaces = placeDao.getAllPlaces();
+            JPanel placesPanel = reviewView.getPlacesPanel();
+            placesPanel.removeAll();
+            placesPanel.setLayout(new GridBagLayout());
+            placesPanel.setBackground(new Color(255, 242, 227));
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(10, 10, 10, 10);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            
+            boolean found = false;
+            int col = 0;
+            int row = 0;
+            
+            for (PlaceData place : allPlaces) {
+                if (place.getPlaceName().toLowerCase().contains(searchText.toLowerCase()) ||
+                    place.getDescription().toLowerCase().contains(searchText.toLowerCase())) {
+                    
+                    gbc.gridx = col;
+                    gbc.gridy = row;
+                    gbc.gridwidth = 1;
+                    gbc.anchor = GridBagConstraints.CENTER;
+                    
+                    placesPanel.add(createPlaceCard(place), gbc);
+                    
+                    col++;
+                    if (col >= 3) {
+                        col = 0;
+                        row++;
+                    }
+                    found = true;
+                }
+            }
+            
+            if (!found) {
+                JLabel noResultsLabel = new JLabel("No places found matching '" + searchText + "'");
+                noResultsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                noResultsLabel.setForeground(Color.GRAY);
+                noResultsLabel.setFont(new Font("Segoe UI", Font.ITALIC, 16));
+                gbc.gridx = 0;
+                gbc.gridy = 0;
+                gbc.gridwidth = 3;
+                placesPanel.add(noResultsLabel, gbc);
+            }
+            
+            placesPanel.revalidate();
+            placesPanel.repaint();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(reviewView, "Error searching places: " + e.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    
 }

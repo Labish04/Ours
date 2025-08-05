@@ -5,6 +5,7 @@
 package happytravell.view;
 
 import java.awt.Image;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseListener;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -331,6 +332,12 @@ public class AdminReviewsDetailsView extends javax.swing.JFrame {
     public JLabel getDashboardlabel(){
         return dashboardLabel;
     }
+    public void BookingDetailsNavigation(MouseListener listener){
+        bookingDetailsLabel.addMouseListener(listener);
+    }
+    public JLabel getBookingDetailslabel(){
+        return bookingDetailsLabel;
+    }
     public void RouteDetailsNavigation(MouseListener listener){
         routeDetailsLabel.addMouseListener(listener);
     }
@@ -360,7 +367,11 @@ public class AdminReviewsDetailsView extends javax.swing.JFrame {
     }
     public JLabel getLogOutlabel(){
         return logOutLabel;
-    } 
+    }
+    
+    public void BackNavigation(ActionListener listener){
+        backButton.addActionListener(listener);
+    }
     
     public JButton getBackButton(){
     return backButton;
